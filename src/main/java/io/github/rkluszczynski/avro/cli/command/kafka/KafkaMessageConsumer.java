@@ -1,7 +1,9 @@
 package io.github.rkluszczynski.avro.cli.command.kafka;
 
+import io.github.rkluszczynski.avro.cli.command.kafka.data.DataMessageListener;
 import io.github.rkluszczynski.avro.cli.command.kafka.text.TextMessageListener;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
@@ -39,7 +41,10 @@ class KafkaMessageConsumer {
     }
 
     private ExtendedMessageListener createMessageListener(MessageTypeParameter messageType) {
-        return new TextMessageListener();
+        Map<MessageTypeParameter, ExtendedMessageListener<String, ?>> listeners = Map.of(
+                MessageTypeParameter.TEXT, new TextMessageListener(),
+                MessageTypeParameter.DATA, new DataMessageListener());
+        return listeners.get(messageType);
     }
 
     private ConsumerFactory<String, String> createConsumerFactory(Map<String, Object> consumerConfig) {
@@ -59,6 +64,9 @@ class KafkaMessageConsumer {
         switch (messageType) {
             case TEXT:
                 consumerConfig.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+                break;
+            case DATA:
+                consumerConfig.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class);
                 break;
             default:
                 throw new RuntimeException("Unknown kafka message type!");
